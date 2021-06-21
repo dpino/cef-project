@@ -12,12 +12,14 @@ namespace minimal {
 // Minimal implementation of client handlers.
 class Client : public CefClient,
                public CefDisplayHandler,
+               public CefKeyboardHandler,
                public CefLifeSpanHandler {
  public:
   Client();
 
   // CefClient methods:
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
+  CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
 
   // CefDisplayHandler methods:
@@ -28,6 +30,9 @@ class Client : public CefClient,
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
+
+  // CefKeyboardHandler methods:
+  bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event, CefEventHandle os_event, bool* is_keyboard_shortcut) OVERRIDE;
 
  private:
   IMPLEMENT_REFCOUNTING(Client);

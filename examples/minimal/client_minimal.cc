@@ -31,4 +31,10 @@ void Client::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   return shared::OnBeforeClose(browser);
 }
 
+bool Client::OnPreKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event, CefEventHandle os_event, bool* is_keyboard_shortcut) {
+  fprintf(stderr, "### Client::OnPreKeyEvent\n");
+
+  return false;
+}
+
 }  // namespace minimal
