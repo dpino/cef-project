@@ -6,6 +6,10 @@
 
 #include "examples/shared/client_util.h"
 
+#include <X11/Xlib.h>
+
+#define XA_ATOM ((Atom) 4)
+
 namespace minimal {
 
 Client::Client() {}
@@ -70,6 +74,63 @@ static int GetKeyCode(const CefKeyEvent& event) {
   #endif
 }
 
+std::pair<CefPoint, CefSize> GetBrowserWindowBounds(
+    CefRefPtr<CefBrowser> browser) {
+  auto xDisplay = cef_get_xdisplay();
+  auto xWindow = browser->GetHost()->GetWindowHandle();
+
+  Window winDummy;
+  int x, y;
+  unsigned int w, h, bw, depth;
+
+  XGetGeometry(xDisplay, xWindow, &winDummy, &x, &y, &w, &h, &bw, &depth);
+  return {CefPoint(x, y), CefSize(w, h)};
+}
+
+void SetXWindowBounds(XDisplay* xdisplay,
+                      ::Window xwindow,
+                      int x,
+                      int y,
+                      size_t width,
+                      size_t height) {
+  CHECK(xdisplay != 0);
+  XWindowChanges changes = {0};
+  changes.x = x;
+  changes.y = y;
+  changes.width = static_cast<int>(width);
+  changes.height = static_cast<int>(height);
+  XConfigureWindow(xdisplay, xwindow, CWX | CWY | CWHeight | CWWidth, &changes);
+}
+
+void MakeBrowserWindowAlwaysOnTop(CefRefPtr<CefBrowser> browser)
+{
+  auto xDisplay = cef_get_xdisplay();
+  auto xWindow = browser->GetHost()->GetWindowHandle();
+
+  Atom wm_state = XInternAtom(xDisplay, "_NET_WM_STATE_ABOVE", False);
+  XChangeProperty(xDisplay, xWindow, XInternAtom(xDisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (unsigned char *) &wm_state, 1);
+}
+
+static bool keyboard_shortcut_show_developer_tools(CefRefPtr<CefBrowser> browser) {
+  CefPoint toplevel_window_location;
+  CefSize toplevel_window_size;
+
+  std::tie(toplevel_window_location, toplevel_window_size) = GetBrowserWindowBounds(browser);
+
+  unsigned int width = toplevel_window_size.width;
+  unsigned int height = toplevel_window_size.height / 4;
+  int x = toplevel_window_location.x;
+  int y = toplevel_window_size.height - height;
+
+  CefWindowInfo windowInfo;
+  windowInfo.SetAsChild(browser->GetHost()->GetWindowHandle(), CefRect(x, y, width, height));
+
+  auto client = browser->GetHost()->GetClient();
+  browser->GetHost()->ShowDevTools(windowInfo, client, CefBrowserSettings(), CefPoint());
+
+  return true;
+}
+
 bool Client::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                            const CefKeyEvent& event,
                            CefEventHandle os_event,
@@ -94,6 +155,14 @@ bool Client::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
       }
     }
   }
+
+  // Simple keys.
+  switch (GetKeyCode(event)) {
+    case VKEY_F12:
+      handled = keyboard_shortcut_show_developer_tools(browser);
+    break;
+  }
+
   *is_keyboard_shortcut = !handled;
   return handled;
 }
