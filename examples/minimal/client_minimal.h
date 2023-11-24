@@ -12,13 +12,15 @@ namespace minimal {
 // Minimal implementation of client handlers.
 class Client : public CefClient,
                public CefDisplayHandler,
-               public CefLifeSpanHandler {
+               public CefLifeSpanHandler,
+               public CefKeyboardHandler {
  public:
   Client();
 
   // CefClient methods:
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+  CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
   // CefDisplayHandler methods:
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -28,6 +30,38 @@ class Client : public CefClient,
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
+
+  bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
+                     const CefKeyEvent &event,
+                     CefEventHandle os_event,
+                     bool *is_keyboard_shortcut) override {
+	bool handled = false;
+
+    if (event.type != KEYEVENT_RAWKEYDOWN)
+      return false;
+
+    if (event.modifiers & EVENTFLAG_CONTROL_DOWN) {
+      // Ctrl + P (Linux and Windows).
+      if (GetKeyCode(event) == 0x21 || GetKeyCode(event) == 0x50) {
+        browser->GetHost()->Print();
+        handled = true;
+      }
+    }
+
+    if (handled)
+      *is_keyboard_shortcut = handled;
+
+    return handled;
+  }
+
+ private:
+  int GetKeyCode(const CefKeyEvent& event) {
+    #ifdef linux
+        return event.native_key_code;
+    #else
+        return event.windows_key_code;
+    #endif
+  }
 
  private:
   IMPLEMENT_REFCOUNTING(Client);
