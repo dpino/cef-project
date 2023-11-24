@@ -35,6 +35,7 @@ class BrowserApp : public CefApp, public CefBrowserProcessHandler {
       command_line->AppendSwitch("use-mock-keychain");
 #endif
     }
+    command_line->AppendSwitch("enable-print-preview");
   }
 
   // CefBrowserProcessHandler methods:
