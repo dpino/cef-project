@@ -39,8 +39,13 @@ class BrowserApp : public CefApp, public CefBrowserProcessHandler {
 
   // CefBrowserProcessHandler methods:
   void OnContextInitialized() override {
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+
+    auto url = command_line->GetSwitchValue("url");
+    if (url.empty())
+        url = kStartupURL;
     // Create the browser window.
-    shared::CreateBrowser(new Client(), kStartupURL, CefBrowserSettings());
+    shared::CreateBrowser(new Client(), url, CefBrowserSettings());
   }
 
  private:
